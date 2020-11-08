@@ -1,0 +1,309 @@
+/* Minification failed. Returning unminified contents.
+(49,25-26): run-time error JS1014: Invalid character: `
+(49,26-27): run-time error JS1195: Expected expression: <
+(52,57-58): run-time error JS1014: Invalid character: `
+(53,43-44): run-time error JS1004: Expected ';': {
+(61,25-26): run-time error JS1014: Invalid character: `
+(61,26-27): run-time error JS1195: Expected expression: <
+(64,57-58): run-time error JS1014: Invalid character: `
+(73,25-26): run-time error JS1014: Invalid character: `
+(73,26-27): run-time error JS1195: Expected expression: <
+(76,39-51): run-time error JS1197: Too many errors. The file might not be a JavaScript file: "${_pageID}"
+ */
+// IIFE - Immediately Invoked Function Expression
+(function (load) {
+    // The global jQuery object is passed as a parameter
+    load(window.jQuery, window, document);
+}(function ($, window, document) {
+    // The $ is now locally scoped
+    // Listen for the jQuery ready event on the document
+    $(function () {
+        setMasks();
+        loadCaptureForm();
+    });
+    function clearFormErrors(form) {
+        form.find('.field-error-icon').remove();
+        form.find('.global-errors-container').remove();
+        form.children().not('img').show();
+    }
+    function clearFormLoading(form) {
+        form.find('.frmcap-loading').remove();
+        form.children().not('img').show();
+    }
+    function loadCaptureForm() {
+        if ($('form').length > 0) {
+            $('form').each(function () {
+                var _form = $(this);
+                if (_form.attr('formulario-externo') != null)
+                    return false;
+                // determina o tipo do form
+                var formType = _form.find('input[name^="llfield"]').length > 0
+                    ? 'dynamic'
+                    : 'static';
+                // define o action e method post do action
+                if (_form.prop('action') == '' ||
+                    _form.attr('action') == '' ||
+                    _form.attr('action') == undefined ||
+                    _form.prop('action').indexOf('https://paginas.rocks/') == 0 ||
+                    _form.prop('action').indexOf('/Pages/Index') >= 0) {
+                    _form.prop('action', '/capture');
+                    _form.prop('method', 'post');
+                }
+                // remove a prop target, caso exista
+                _form.removeAttr('target');
+                // altera o button type pra submit
+                _form.find('button').prop('type', 'submit');
+                // define o campo id referente ao código da máquina
+                const fieldId = _form.find('#id');
+                const fieldIdValue = fieldId.length ? +fieldId.val() : 0;
+                if (!fieldId.length) {
+                    _form.prepend(
+                        `<input type="hidden" 
+                                id="id" 
+                                name="id" 
+                                value="${_machineID}" />`);
+                } else if (!fieldIdValue) {
+                    fieldId.val(_machineID);
+                }
+                // define o campo mid referente ao código da máquina
+                const fieldMid = _form.find('#mid');
+                const filedMidValue = fieldMid.length ? +fieldMid.val() : 0;
+                if (!fieldMid.length) {
+                    _form.prepend(
+                        `<input type="hidden" 
+                                id="mid" 
+                                name="mid" 
+                                value="${_machineID}" />`);
+                } else if (!filedMidValue) {
+                    fieldMid.val(_machineID);
+                }
+                // define o campo pid referente ao código da página
+                const fieldPid = _form.find('#pid');
+                const fieldPidValue = fieldPid.length ? +fieldPid.val() : 0;
+                if (!fieldPid.length) {
+                    _form.prepend(
+                        `<input type="hidden" 
+                                id="pid" 
+                                name="pid" 
+                                value="${_pageID}" />`);
+                } else if (!fieldPidValue) {
+                    fieldPid.val(_pageID);
+                }
+                // id da máquina para hotleads
+                if (!_form.find('#list_id').length)
+                    _form.prepend('<input id="list_id" name="list_id" type="hidden" value="' + _machineID + '" />');
+                // provider para hotleads
+                if (!_form.find('#provider').length)
+                    _form.prepend('<input id="provider" name="provider" type="hidden" value="leadlovers" />');
+                // origem do lead
+                var _src = $('<input>').attr({
+                    type: 'hidden',
+                    id: 'source',
+                    name: 'source',
+                    value: _leadSource
+                });
+                _form.append(_src);
+                // sck do lead
+                var _sck = $('<input>').attr({
+                    type: 'hidden',
+                    id: 'sck',
+                    name: 'sck',
+                    value: _leadSCK
+                });
+                _form.append(_sck);
+                // define o tipo da captura
+                var _captureType = $('<input>').attr({
+                    type: 'hidden',
+                    id: 'formType',
+                    name: 'formType',
+                    value: formType
+                });
+                _form.append(_captureType);
+                // url da página de origem
+                if (!_form.find("#origin").length)
+                    _form.prepend('<input type="hidden" id="origin" name="origin" value="' + window.location.href + '" />');
+                // ações do facebook
+                if (_form.find('.btn-facebook').length > 0) {
+                    _form.find('.btn-facebook').attr('href', _fbURL);
+                    if (_form.find('.btn-facebook').find('em').length > 0) {
+                        $('<i class="fa fa-fw fa-facebook">').insertBefore(_form.find('.btn-facebook').find('em'));
+                        _form.find('.btn-facebook').find('em').remove();
+                    }
+                } else if (_form.find('#facebook').length > 0) {
+                    _form.find('#facebook').attr('href', _fbURL);
+                    if (_form.find('#facebook').find('em').length > 0) {
+                        $('<i class="fa fa-fw fa-facebook">').insertBefore(_form.find('#facebook').find('em'));
+                        _form.find('#facebook').find('em').remove();
+                    }
+                }
+                // altera dados de acordo com o tipo
+                if (formType === 'static') {
+                    // preenche automaticamente os campos do form
+                    loadStoredCaptureData(_form);
+                    // ajax submit
+                    _form.submit(function (e) {
+                        // impede o post padrão do form
+                        e.preventDefault();
+                        // faz o submit assíncrono
+                        submitForm(_form);
+                        // retorno do submit false, já que foi assíncrono
+                        return false;
+                    });
+                }
+            });
+        }
+    }
+    function loadStoredCaptureData(form) {
+        if (!!localStorage.getItem("llCapName") && form.find('#name').length)
+            form.find('#name').val(localStorage.getItem("llCapName"));
+        if (!!localStorage.getItem("llCapEmail") && form.find('#email').length)
+            form.find('#email').val(localStorage.getItem("llCapEmail"));
+        if (!!localStorage.getItem("llCapBirthdate") && form.find('#birthdate').length)
+            form.find('#birthdate').val(localStorage.getItem("llCapBirthdate"));
+        if (!!localStorage.getItem("llCapPhone") && form.find('#phone').length)
+            form.find('#phone').val(localStorage.getItem("llCapPhone"));
+        if (!!localStorage.getItem("llCapCompany") && form.find('#company').length)
+            form.find('#company').val(localStorage.getItem("llCapCompany"));
+        if (!!localStorage.getItem("llCapCity") && form.find('#city').length)
+            form.find('#city').val(localStorage.getItem("llCapCity"));
+        if (!!localStorage.getItem("llCapState") && form.find('#state').length)
+            form.find('#state').val(localStorage.getItem("llCapState"));
+        if (!!localStorage.getItem("llCapMessage") && form.find('#message').length)
+            form.find('#message').val(localStorage.getItem("llCapMessage"));
+    }
+    function setMasks() {
+        // mask for phone
+        $('#phone').keypress(function (e) {
+            var char = e.charCode;
+            element = $(this);
+            phone = element.val().replace(/\D/g, '');
+            $.mask.definitions['~'] = '([0-9],+)?';
+            if ((($(this).val() === "(__) _____-____") || ($(this).val() === "")) && (char === 43)) {
+                element.mask("~(99) 99 99999-999?9");
+                var ev = jQuery.Event("keydown");
+                ev.which = e.charCode; // # Some key code value
+                $("input").trigger(ev);
+                element.inputmask({ "placeholder": "" });
+            } else if (($(this).val() === "_(__) __ _____-____") || ($(this).val() === "")) {
+                element.mask("(99) 99999-999?9");
+                var ev = jQuery.Event("keydown");
+                ev.which = e.charCode; // # Some key code value
+                $("input").trigger(ev);
+                element.inputmask({ "placeholder": "" });
+            }
+        });
+        $('#phone').focusout(function () {
+            var phone, element;
+            element = $(this);
+            phone = element.val().replace(/\D/g, '');
+        }).trigger('focusout');
+    }
+    function storeCaptureData(form) {
+        // grava valores para preenchimento automático do form
+        if (form.find('#name').length > 0) localStorage.setItem("llCapName", form.find('#name').val());
+        if (form.find('#email').length > 0) localStorage.setItem("llCapEmail", form.find('#email').val());
+        if (form.find('#birthdate').length > 0) localStorage.setItem("llCapBirthdate", form.find('#birthdate').val());
+        if (form.find('#phone').length > 0) localStorage.setItem("llCapPhone", form.find('#phone').val());
+        if (form.find('#company').length > 0) localStorage.setItem("llCapCompany", form.find('#company').val());
+        if (form.find('#city').length > 0) localStorage.setItem("llCapCity", form.find('#city').val());
+        if (form.find('#state').length > 0) localStorage.setItem("llCapState", form.find('#state').val());
+        if (form.find('#message').length > 0) localStorage.setItem("llCapMessage", form.find('#message').val());
+    }
+    function submitForm(form) {
+        clearFormErrors(form);
+        form.ajaxSubmit({
+            resetForm: false,
+            beforeSend: function () {
+                form.children().hide();
+                form.css({ minHeight: '103px' });
+                // exibe o loading...
+                form.append('<div class="frmcap-loading text-center">');
+                form.find('.frmcap-loading').append('<i class="fa fa-fw fa-spinner fa-pulse fa-4x">');
+            },
+            success: function (response) {
+                if (response.errors && response.errors.length) {
+                    // stop loading
+                    clearFormLoading(form);
+                    // show errors
+                    const globalErrors = [];
+                    response.errors.forEach(err => {
+                        if (err.field) {
+                            const field = form.find(
+                                `${err.field.startsWith('#')
+                                    ? err.field
+                                    : `#${err.field}`}`);
+                            if (field.length) {
+                                updateFieldStructure(field);
+                                const fieldHeight = +field.css('height').replace('px', '');
+                                const fieldErrIcon = $('<img>').attr({
+                                    src: '/content/images/error-icon.png',
+                                    class: 'field-error-icon',
+                                    title: err.error,
+                                    style: `
+                                    position: absolute;
+                                    right: 0;
+                                    width: 16px;
+                                    height: 16px;
+                                    margin-right: 15px;
+                                    margin-top: ${fieldHeight / 2 - 10}px`
+                                });
+                                fieldErrIcon.insertBefore(field);
+                            } else {
+                                globalErrors.push(err.error);
+                            }
+                        } else {
+                            globalErrors.push(err.error);
+                        }
+                    });
+                    if (globalErrors.length) {
+                        form.children().hide();
+                        const errContainer = $('<div>').attr({
+                            class: 'global-errors-container text-center',
+                            style: `
+                                color: #f51c3f;
+                                padding: 20px 0;`
+                        });
+                        const errTitle = $('<b>').text('Verifique os seguintes erros:');
+                        const errList = $('<ul>').attr({
+                            style: `
+                                list-style-type: none;
+                                margin: 20px 0;
+                                padding: 0;`
+                        });
+                        const errButton = $('<button>').attr({
+                            type: 'button',
+                            style: `
+                                border: none;
+                                padding: 6px 16px;
+                                border-radius: 5px;`
+                        }).text('voltar');
+                        errList.append(globalErrors.map(err => `<li>${err}</li>`));
+                        errContainer.append(errTitle);
+                        errContainer.append(errList);
+                        errContainer.append(errButton);
+                        errButton.click(() => {
+                            clearFormErrors(form);
+                        });
+                        form.append(errContainer);
+                    }
+                } else {
+                    storeCaptureData(form);
+                    window.location.href = response;
+                }
+            }
+        });
+    }
+    function updateFieldStructure(field) {
+        const parent = field.parent();
+        if (!parent.hasClass('field-container')) {
+            const fieldContainer = $('<div>').attr({
+                class: 'field-container',
+                style: `
+                    width: 100%;
+                    position: relative;`
+            });
+            fieldContainer.insertBefore(field);
+            fieldContainer.append(field.detach());
+        }
+    }
+}));;
